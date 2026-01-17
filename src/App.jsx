@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import TrafficSimulation from './pages/TrafficSimulation'
 import ControlPanel from './pages/ControlPanel'
@@ -12,15 +12,45 @@ function App() {
     light3: 'green'
   })
   const [autoMode, setAutoMode] = useState(true)
-  const [cars, setCars] = useState([
-    { id: 1, lane: 1, position: -50, speed: 1.2, violations: 0, isViolating: false },
-    { id: 2, lane: 1, position: -150, speed: 1.5, violations: 0, isViolating: false },
-    { id: 3, lane: 2, position: -80, speed: 1.3, violations: 0, isViolating: false },
-    { id: 4, lane: 2, position: -180, speed: 1.4, violations: 0, isViolating: false },
-    { id: 5, lane: 3, position: -120, speed: 1.1, violations: 0, isViolating: false },
-    { id: 6, lane: 3, position: -200, speed: 1.6, violations: 0, isViolating: false },
-  ])
+  const [cars, setCars] = useState([])
+
+  // Initialize cars with 8% being rule violators
+  useEffect(() => {
+    const initializeCars = () => {
+      const initialCars = []
+      let carId = 1
+      const numCars = 12
+      const violatorCount = Math.ceil(numCars * 0.08) // 8% violators
+      
+      // Randomly select which cars will be violators
+      const violatorIds = new Set()
+      while (violatorIds.size < violatorCount) {
+        violatorIds.add(Math.floor(Math.random() * numCars) + 1)
+      }
+      
+      for (let i = 0; i < numCars; i++) {
+        const lane = (i % 3) + 1
+        const subLane = (i % 4) + 1 // 4 sub-lanes per road
+        const isViolator = violatorIds.has(carId)
+        initialCars.push({
+          id: carId,
+          lane: lane,
+          subLane: subLane,
+          position: -60 - (i * 40),
+          speed: 1 + Math.random() * 0.8,
+          violations: 0,
+          isViolating: false,
+          isRuleViolator: isViolator // 8% of cars are rule violators
+        })
+        carId++
+      }
+      return initialCars
+    }
+    
+    setCars(initializeCars())
+  }, [])
   const [totalViolations, setTotalViolations] = useState(0)
+  const [violationRecord, setViolationRecord] = useState([])
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-500 via-indigo-600 to-purple-700">
@@ -77,11 +107,14 @@ function App() {
             setCars={setCars}
             totalViolations={totalViolations}
             setTotalViolations={setTotalViolations}
+            violationRecord={violationRecord}
+            setViolationRecord={setViolationRecord}
           />
         ) : currentPage === 'details' ? (
           <CarDetails 
             cars={cars}
             totalViolations={totalViolations}
+            violationRecord={violationRecord}
           />
         ) : (
           <ControlPanel 
